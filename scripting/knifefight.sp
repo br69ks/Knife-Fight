@@ -124,6 +124,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	hFightStarted = CreateGlobalForward("OnKnifeFightStarted", ET_Ignore, Param_Cell, Param_Cell);
 	hFightEnded = CreateGlobalForward("OnKnifeFightEnded", ET_Ignore, Param_Cell);
+	MarkNativeAsOptional("Zone_GetZonePosition");
 	
 	return APLRes_Success;
 }
