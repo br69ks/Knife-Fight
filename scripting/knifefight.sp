@@ -61,7 +61,7 @@ ConVar cvBuyAnywhere,
 Handle Cookie_FightPref, Cookie_SoundPref = INVALID_HANDLE;
 int C_FightPref[MAXPLAYERS + 1], C_SoundPref[MAXPLAYERS + 1];
 
-Handle hFightStarted, hFightEnded;
+Handle hPlayerDeclined, hPlayerAccepted, hFightStarted, hFightEnded;
 
 public void OnPluginStart()
 {
@@ -124,6 +124,8 @@ public void OnMapStart()
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
+	hPlayerDeclined = CreateGlobalForward("OnPlayerDeclineFight", ET_Ignore, Param_Cell);
+	hPlayerAccepted = CreateGlobalForward("OnPlayerAcceptFight", ET_Ignore, Param_Cell);
 	hFightStarted = CreateGlobalForward("OnKnifeFightStarted", ET_Ignore, Param_Cell, Param_Cell);
 	hFightEnded = CreateGlobalForward("OnKnifeFightEnded", ET_Ignore, Param_Cell);
 	MarkNativeAsOptional("Zone_GetZonePosition");
@@ -311,11 +313,19 @@ void InitKnifeFight()
 		Player1Agree = 1;
 		Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player1, "Player agrees");
 		CHAT_SayText(0, Player1, message);
+		
+		Call_StartForward(hPlayerAccepted);
+		Call_PushCell(Player1);
+		Call_Finish();
 	}
 	else if (C_FightPref[Player1] == -1)
 	{
 		Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player1, "Player disagrees");
 		CHAT_SayText(0, Player1, message);
+		
+		Call_StartForward(hPlayerDeclined);
+		Call_PushCell(Player1);
+		Call_Finish();
 	}
 	else
 		SendKnifeMenu(Player1);
@@ -332,11 +342,19 @@ void InitKnifeFight()
 		Player2Agree = 1;
 		Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player2, "Player agrees");
 		CHAT_SayText(0, Player2, message);
+		
+		Call_StartForward(hPlayerAccepted);
+		Call_PushCell(Player2);
+		Call_Finish();
 	}
 	else if (C_FightPref[Player2] == -1)
 	{
 		Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player2, "Player disagrees");
 		CHAT_SayText(0, Player2, message);
+		
+		Call_StartForward(hPlayerDeclined);
+		Call_PushCell(Player2);
+		Call_Finish();
 	}
 	else
 		SendKnifeMenu(Player2);
@@ -380,12 +398,18 @@ public int kfmenu_hndl(Menu kfmenu, MenuAction action, int client, int item)
 					Player1Agree = 1;
 					Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player1, "Player agrees");
 					CHAT_SayText(0, Player1, message);
+					Call_StartForward(hPlayerAccepted);
+					Call_PushCell(Player1);
+					Call_Finish();
 				}
 				else
 				{
 					Player2Agree = 1;
 					Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player2, "Player agrees");
 					CHAT_SayText(0, Player2, message);
+					Call_StartForward(hPlayerAccepted);
+					Call_PushCell(Player2);
+					Call_Finish();
 				}
 			}
 			
@@ -395,11 +419,17 @@ public int kfmenu_hndl(Menu kfmenu, MenuAction action, int client, int item)
 				{
 					Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player1, "Player disagrees");
 					CHAT_SayText(0, Player1, message);
+					Call_StartForward(hPlayerDeclined);
+					Call_PushCell(Player1);
+					Call_Finish();
 				}
 				else
 				{
 					Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] \x03%N \x04%t", Player2, "Player disagrees");
 					CHAT_SayText(0, Player2, message);
+					Call_StartForward(hPlayerDeclined);
+					Call_PushCell(Player2);
+					Call_Finish();
 				}
 			}
 		}
