@@ -126,8 +126,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	hPlayerDeclined = CreateGlobalForward("OnPlayerDeclineFight", ET_Ignore, Param_Cell);
 	hPlayerAccepted = CreateGlobalForward("OnPlayerAcceptFight", ET_Ignore, Param_Cell);
-	hFightStarted = CreateGlobalForward("OnKnifeFightStarted", ET_Ignore, Param_Cell, Param_Cell);
-	hFightEnded = CreateGlobalForward("OnKnifeFightEnded", ET_Ignore, Param_Cell);
+	hFightStarted = CreateGlobalForward("OnKnifeFightStart", ET_Ignore, Param_Cell, Param_Cell);
+	hFightEnded = CreateGlobalForward("OnKnifeFightEnd", ET_Ignore, Param_Cell);
 	MarkNativeAsOptional("Zone_GetZonePosition");
 	
 	return APLRes_Success;
@@ -493,11 +493,6 @@ void StartFight()
 	CreateTimer(2.0, StartBeacon, Player1, TIMER_REPEAT);
 	CreateTimer(2.0, StartBeacon, Player2, TIMER_REPEAT);
 	CreateTimer(1.0, PreStart, _, TIMER_REPEAT);
-	
-	Call_StartForward(hFightStarted);
-	Call_PushCell(Player1);
-	Call_PushCell(Player2);
-	Call_Finish();
 }
 
 public Action PreStart(Handle timer)
@@ -521,6 +516,10 @@ public Action PreStart(Handle timer)
 		EquipKnife(Player2);
 		PrintCenterTextAll("%t", "Fight");
 		CreateTimer(1.0, FightTimer, _, TIMER_REPEAT);
+		Call_StartForward(hFightStarted);
+		Call_PushCell(Player1);
+		Call_PushCell(Player2);
+		Call_Finish();
 		return Plugin_Stop;
 	}
 	PreFightTimer--;
@@ -623,6 +622,10 @@ void EndFight()
 		PrintCenterTextAll("%t", "Fight draw");
 		Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] %t", "Fight draw");
 		CHAT_SayText(0, 0, message);
+		Call_StartForward(hFightEnded);
+		Call_PushCell(0);
+		Call_Finish();
+		return;
 	}
 	int who_won = IsClientInGame(Player1) && IsPlayerAlive(Player1) ? Player1 : Player2;
 	GivePlayersWeapons(who_won);
@@ -630,7 +633,6 @@ void EndFight()
 	CHAT_SayText(0, who_won, message);
 	BlockEntity(Player1);
 	BlockEntity(Player2);
-	
 	Call_StartForward(hFightEnded);
 	Call_PushCell(who_won);
 	Call_Finish();
