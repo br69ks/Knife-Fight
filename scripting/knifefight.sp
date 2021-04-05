@@ -2,7 +2,7 @@
 #include <sdktools>
 #include <knifefight>
 #include <knifefight/chat.sp>
-#include <devzones>
+#tryinclude <devzones>
 #include <clientprefs>
 
 #pragma semicolon 1
