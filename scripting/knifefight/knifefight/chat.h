@@ -1,0 +1,2 @@
+
+int isColorMsg = false;
