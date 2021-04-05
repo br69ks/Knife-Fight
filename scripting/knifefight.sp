@@ -69,7 +69,7 @@ public void OnPluginStart()
 		CSGO = true;
 	if (GetEngineVersion() == Engine_CSS)
 		CSS = true;
-	
+	ParseSongs();
 	CHAT_DetectColorMsg();
 	LoadTranslations("knifefight.phrases");
 	CreateConVar("sm_knifefight_version", PLUGIN_VERSION, "KnifeFight Version", FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
@@ -109,15 +109,11 @@ public void OnPluginStart()
 	
 	g_beamsprite = PrecacheModel("materials/sprites/lgtning.vmt");
 	g_halosprite = PrecacheModel("materials/sprites/halo01.vmt");
-	
-	if (cvFightSong.BoolValue)
-		ParseSongs();
 }
 
 public void OnMapStart()
 {
-	if (cvFightSong.BoolValue)
-		ParseSongs();
+	ParseSongs();
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -430,7 +426,6 @@ void StartFight()
 		for (int i = 1; i <= MaxClients; i++)
 			if (IsClientInGame(i) && C_SoundPref[i] == 1)
 				clients[total++] = i;
-		
 		EmitSound(clients, total, song, _, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL);
 				
 	}
@@ -687,7 +682,7 @@ void BlockEntity(int entity)
 
 void ParseSongs()
 {
-	KeyValues kv = CreateKeyValues("Songs");
+	KeyValues kv = CreateKeyValues("knifefight_songs");
 	
 	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "configs/knifefight_songs.cfg");
