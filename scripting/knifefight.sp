@@ -69,16 +69,18 @@ public void OnPluginStart()
 		CSGO = true;
 	if (GetEngineVersion() == Engine_CSS)
 		CSS = true;
-	ParseSongs();
+	
 	CHAT_DetectColorMsg();
 	LoadTranslations("knifefight.phrases");
 	CreateConVar("sm_knifefight_version", PLUGIN_VERSION, "KnifeFight Version", FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 	cvFightTime = CreateConVar("sm_knifefight_time", "30", "Duration of the knife fight");
 	cvTeleport = CreateConVar("sm_knifefight_teleport", "1", "Teleport players before the fight", _, true, 0.0, true, 1.0);
+	cvTeleport.AddChangeHook(OnConVarChanged);
 	cvForce = CreateConVar("sm_knifefight_forcefight", "0", "Force players to fight", _, true, 0.0, true, 1.0);
 	cvMinPlayers = CreateConVar("sm_knifefight_minplayers", "3", "Min players to allow knife fight");
 	cvFightSong = CreateConVar("sm_knifefight_fightsong", "0", "Play random song from config during the fight", _, true, 0.0, true, 1.0);
 	cvDevZones = CreateConVar("sm_knifefight_devzones", "0", "Teleport player to a specific zone on a map (zone must be named <mapname>_knifefight)", _, true, 0.0, true, 1.0);
+	cvDevZones.AddChangeHook(OnConVarChanged);
 	
 	if (cvDevZones.BoolValue)
 		cvTeleport.BoolValue = false;
@@ -109,11 +111,15 @@ public void OnPluginStart()
 	
 	g_beamsprite = PrecacheModel("materials/sprites/lgtning.vmt");
 	g_halosprite = PrecacheModel("materials/sprites/halo01.vmt");
+	
+	if (cvFightSong.BoolValue)
+		ParseSongs();
 }
 
 public void OnMapStart()
 {
-	ParseSongs();
+	if (cvFightSong.BoolValue)
+		ParseSongs();
 }
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
@@ -123,6 +129,18 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	MarkNativeAsOptional("Zone_GetZonePosition");
 	
 	return APLRes_Success;
+}
+
+public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	if (convar == cvTeleport && StrEqual(newValue, "1"))
+		cvDevZones.IntValue = 0;
+		
+	if (convar == cvDevZones && StrEqual(newValue, "1"))
+		cvTeleport.IntValue = 0;
+		
+	if (convar == cvFightSong && StrEqual(newValue, "1"))
+		ParseSongs();
 }
 
 public void OnClientCookiesCached(int client)
@@ -568,8 +586,10 @@ void EndFight()
 	char message[MAX_CHAT_SIZE];
 	if (IsPlayerAlive(Player1) && IsPlayerAlive(Player2))
 	{
-		ForcePlayerSuicide(Player1);
-		ForcePlayerSuicide(Player2);
+		for (int i = 1; i <= MaxClients; i++)
+		 if (IsClientInGame(i) && IsPlayerAlive(i))
+		 	ForcePlayerSuicide(i);
+		 	
 		PrintCenterTextAll("%t", "Fight draw");
 		Format(message, sizeof(message), " \x04[\x01KnifeFight\x04] %t", "Fight draw");
 		CHAT_SayText(0, 0, message);
