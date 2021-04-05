@@ -1,0 +1,115 @@
+"Phrases"
+{
+    "Player agrees"
+    {
+        "en"            "agrees to knife to the death!"
+    }
+    "Player disagrees"
+    {
+        "en"            "is a big chicken!"
+    }
+    "Knife menu title"
+    {
+        "en"            "Last Man Standing Knife Fight!"
+    }
+    "Knife question"
+    {
+        "en"            "Do you want to knife it out?"
+    }
+    "Yes option"
+    {
+        "en"            "Yes, Fight to the death!"
+    }
+    "No option"
+    {
+        "en"            "No, I'm a chicken!"
+    }
+    "Both agree"
+    {
+        "en"            "Both Players Agreed!  Fight to the death!"
+    }
+    "1v1 situation"
+    {
+        "en"            "Last Man Standing!"
+    }
+    "beat"
+    {
+        "en"            "beat"
+    }
+    "win battle"
+    {
+        "en"            "to win the battle!"
+    }
+    "Time remaining"
+    {
+        "en"            "Fight Time Remaining"
+    }
+    "Fight draw"
+    {
+        "en"            "Time expired!  The fight was a draw!"
+    }
+    "Items won"
+    {
+        "en"            "You won the following:"
+    }
+    "Health"
+    {
+        "en"            "Health"
+    }
+    "Money"
+    {
+        "en"            "Money"
+    }
+    "Speed"
+    {
+        "en"            "Speed"
+    }
+    "Removing weapons"
+    {
+        "en"            "Removing all weapons"
+    }
+    "Prepare fight"
+    {
+        "en"            "Prepare to fight in"
+    }
+    "Fight"
+    {
+        "en"            "FIGHT!!!"
+    }
+    "KnifeFight settings"
+    {
+        "en"            "[KnifeFight] Settings"
+    }
+    "Play fight songs"
+    {
+        "en"            "Play fight songs"
+    }
+    "Selected"
+    {
+        "en"            "[√]"
+    }
+    "NotSelected"
+    {
+        "en"            "[ ]"
+    }
+    "Show fight panel"
+    {
+        "en"            "Show fight panel"
+    }
+    "Restore fight menu"
+    {
+        "en"            "say !kfmenu and press 2 to restore fight menu."
+    }
+    "Always agree to knife fight"
+    {
+        "en"            "Always agree to knife fight"
+    }
+    "Always disagree to knife fight"
+    {
+        "en"            "Always disagree to knife fight"
+    }    
+    "has won"
+    {
+        "en"            "has won knife fight"
+    }    
+}
