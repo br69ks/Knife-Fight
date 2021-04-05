@@ -501,6 +501,7 @@ void TeleportPlayers()
 		Format(zone, sizeof(zone), "%s_knifefight", mapname);
 		Zone_GetZonePosition(zone, false, position);
 		TeleportEntity(Player1, position, NULL_VECTOR, NULL_VECTOR);
+		TeleportEntity(Player2, position, NULL_VECTOR, NULL_VECTOR);
 	}
 }
 
