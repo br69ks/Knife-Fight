@@ -705,6 +705,8 @@ void ParseSongs()
 		do
 		{
 			kv.GetString("path", g_FightSongs[songsfound], PLATFORM_MAX_PATH);
+			AddFileToDownloadsTable(g_FightSongs[songsfound]);
+			PrecacheSound(g_FightSongs[songsfound]);
 			songsfound++;
 		}
 		while (kv.GotoNextKey());
