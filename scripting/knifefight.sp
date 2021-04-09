@@ -748,12 +748,14 @@ void ParseSongs()
 	kv.Rewind();
 	
 	songsfound = 0;
+	char buffer[64];
 	if (kv.JumpToKey("Songs") && kv.GotoFirstSubKey())
 	{
 		do
 		{
 			kv.GetString("path", g_FightSongs[songsfound], PLATFORM_MAX_PATH);
-			AddFileToDownloadsTable(g_FightSongs[songsfound]);
+			Format(buffer, sizeof(buffer), "sound/%s", g_FightSongs[songsfound]);
+			AddFileToDownloadsTable(buffer);
 			PrecacheSound(g_FightSongs[songsfound]);
 			songsfound++;
 		}
