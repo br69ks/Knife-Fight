@@ -555,7 +555,7 @@ void TeleportPlayers()
 		float pos[3], angles[3], velocity[3];
 		GetClientAbsOrigin(Player1, pos);
 		GetClientEyeAngles(Player1, angles);
-		GetEntPropVector(Player1, Prop_Send, "m_vecVelocity", velocity);
+		GetEntPropVector(Player1, Prop_Data, "m_vecVelocity", velocity);
 		TeleportEntity(Player2, pos, angles, velocity);
 	}
 	else if (cvDevZones.BoolValue)
