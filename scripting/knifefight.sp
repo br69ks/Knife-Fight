@@ -30,7 +30,7 @@ int Player1,
 	PreFightTimer, 
 	g_beamsprite, 
 	g_halosprite,
-	songsfound = 0;
+	songsfound;
 
 enum WeaponsSlot
 {
@@ -40,14 +40,14 @@ enum WeaponsSlot
 	Slot_Melee = 2, 
 	Slot_Projectile = 3, 
 	Slot_Explosive = 4, 
-	Slot_NVGs = 5, 
+	Slot_NVGs = 5,
 }
 
 char g_FightSongs[20][PLATFORM_MAX_PATH];
 
 char Player1Weapons[8][64], Player2Weapons[8][64];
 
-bool FightInProgress, CSGO, CSS = false;
+bool lateload, LastManStanding, FightInProgress, CSGO, CSS;
 bool NoblockEnabled = true;
 
 ConVar cvBuyAnywhere, 
@@ -58,10 +58,22 @@ ConVar cvBuyAnywhere,
        cvFightSong,
        cvDevZones;       
 
-Handle Cookie_FightPref, Cookie_SoundPref = INVALID_HANDLE;
+Cookie Cookie_FightPref, Cookie_SoundPref;
 int C_FightPref[MAXPLAYERS + 1], C_SoundPref[MAXPLAYERS + 1];
 
-Handle hPlayerDeclined, hPlayerAccepted, hFightStarted, hFightEnded;
+GlobalForward hPlayerDeclined, hPlayerAccepted, hFightStarted, hFightEnded;
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	hPlayerDeclined = new GlobalForward("OnPlayerDeclineFight", ET_Ignore, Param_Cell);
+	hPlayerAccepted = new GlobalForward("OnPlayerAcceptFight", ET_Ignore, Param_Cell);
+	hFightStarted = new GlobalForward("OnKnifeFightStart", ET_Ignore, Param_Cell, Param_Cell);
+	hFightEnded = new GlobalForward("OnKnifeFightEnd", ET_Ignore, Param_Cell);
+	MarkNativeAsOptional("Zone_GetZonePosition");
+	lateload = late;
+	
+	return APLRes_Success;
+}
 
 public void OnPluginStart()
 {
@@ -81,9 +93,6 @@ public void OnPluginStart()
 	cvFightSong = CreateConVar("sm_knifefight_fightsong", "0", "Play random song from config during the fight", _, true, 0.0, true, 1.0);
 	cvDevZones = CreateConVar("sm_knifefight_devzones", "0", "Teleport player to a specific zone on a map (zone must be named <mapname>_knifefight)", _, true, 0.0, true, 1.0);
 	cvDevZones.AddChangeHook(OnConVarChanged);
-	
-	if (cvDevZones.BoolValue)
-		cvTeleport.BoolValue = false;
 		
 	AutoExecConfig(true, "knifefight");
 	
@@ -97,23 +106,21 @@ public void OnPluginStart()
 	
 	RegConsoleCmd("kfmenu", cmd_kfmenu, "Open preferences menu for knife fight");
 	
-	Cookie_FightPref = RegClientCookie("sm_knifefight_fightpref", "Automatically accept/deny knifefight for client", CookieAccess_Private);
-	Cookie_SoundPref = RegClientCookie("sm_knifefight_soundpref", "Disable/Enable fight sounds", CookieAccess_Private);
+	Cookie_FightPref = new Cookie("sm_knifefight_fightpref", "Automatically accept/deny knifefight for client", CookieAccess_Private);
+	Cookie_SoundPref = new Cookie("sm_knifefight_soundpref", "Disable/Enable fight sounds", CookieAccess_Private);
 	
 	int info;
 	SetCookieMenuItem(Client_CookieMenuHandler, info, "Knife Fight");
 	
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		C_SoundPref[i] = 1;
-		C_FightPref[i] = 0;
-	}
-	
 	g_beamsprite = PrecacheModel("materials/sprites/lgtning.vmt");
 	g_halosprite = PrecacheModel("materials/sprites/halo01.vmt");
 	
-	if (cvFightSong.BoolValue)
-		ParseSongs();
+	if (lateload)
+	{
+		OnConfigsExecuted();
+		if (cvFightSong.BoolValue)
+			ParseSongs();
+	}
 }
 
 public void OnMapStart()
@@ -122,15 +129,19 @@ public void OnMapStart()
 		ParseSongs();
 }
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+public void OnConfigsExecuted()
 {
-	hPlayerDeclined = CreateGlobalForward("OnPlayerDeclineFight", ET_Ignore, Param_Cell);
-	hPlayerAccepted = CreateGlobalForward("OnPlayerAcceptFight", ET_Ignore, Param_Cell);
-	hFightStarted = CreateGlobalForward("OnKnifeFightStart", ET_Ignore, Param_Cell, Param_Cell);
-	hFightEnded = CreateGlobalForward("OnKnifeFightEnd", ET_Ignore, Param_Cell);
-	MarkNativeAsOptional("Zone_GetZonePosition");
+	if (cvDevZones.BoolValue)
+		cvTeleport.BoolValue = false;
 	
-	return APLRes_Success;
+	if (cvTeleport.BoolValue)
+		cvDevZones.BoolValue = false;
+}
+
+public void OnClientPostAdminCheck(int client)
+{
+	C_SoundPref[client] = 1;
+	C_FightPref[client] = 0;
 }
 
 public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -148,13 +159,11 @@ public void OnConVarChanged(ConVar convar, const char[] oldValue, const char[] n
 public void OnClientCookiesCached(int client)
 {
 	char buffer[5];
-	GetClientCookie(client, Cookie_SoundPref, buffer, sizeof(buffer));
-	if (!StrEqual(buffer, ""))
-		C_SoundPref[client] = StringToInt(buffer);
+	Cookie_SoundPref.Get(client, buffer, sizeof(buffer));
+	C_SoundPref[client] = buffer[0] == '\0' ? 1 : StringToInt(buffer);
 		
-	GetClientCookie(client, Cookie_FightPref, buffer, sizeof(buffer));
-	if (!StrEqual(buffer, ""))
-		C_FightPref[client] = StringToInt(buffer);
+	Cookie_FightPref.Get(client, buffer, sizeof(buffer));
+	C_FightPref[client] = buffer[0] == '\0' ? 0 : StringToInt(buffer);
 }
 
 public void Client_CookieMenuHandler(int client, CookieMenuAction action, any info, char[] buffer, int maxlen)
@@ -169,7 +178,7 @@ public Action cmd_kfmenu(int client, int args)
 
 public void client_kfmenu(int client)
 {
-	Menu menu = CreateMenu(client_kfmenu_hndl);
+	Menu menu = new Menu(client_kfmenu_hndl);
 	char buffer[64];
 	Format(buffer, sizeof(buffer), "%t", "KnifeFight settings");
 	menu.SetTitle(buffer);
@@ -178,7 +187,7 @@ public void client_kfmenu(int client)
 	menu.AddItem("Play fight songs", buffer);
 	
 	Format(buffer, sizeof(buffer), "%t", "Show fight panel");
-	menu.AddItem("Show fight panel", buffer, (!FightInProgress && MaxClients >= 3 && GetLivePlayerCount() == 2) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
+	menu.AddItem("Show fight panel", buffer, LastManStanding ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED);
 	
 	Format(buffer, sizeof(buffer), "%t %t", "Always agree to knife fight", C_FightPref[client] == 1 ? "Selected" : "NotSelected");
 	menu.AddItem("Always agree to knife fight", buffer);
@@ -206,7 +215,7 @@ public int client_kfmenu_hndl(Menu menu, MenuAction action, int client, int item
 			}
 			else if (item == 1)
 			{
-				if (!FightInProgress && MaxClients >= cvMinPlayers.IntValue && GetLivePlayerCount() == 2)
+				if (LastManStanding)
 					SendKnifeMenu(client);
 				else
 					client_kfmenu(client);
@@ -220,7 +229,7 @@ public int client_kfmenu_hndl(Menu menu, MenuAction action, int client, int item
 					
 				char buffer[5];
 				IntToString(C_FightPref[client], buffer, sizeof(buffer));
-				SetClientCookie(client, Cookie_FightPref, buffer);
+				Cookie_FightPref.Set(client, buffer);
 				client_kfmenu(client);
 			}
 		}
@@ -238,7 +247,7 @@ public Action EventPlayerDeath(Event event, const char[] name, bool dontBroadcas
 	if (FightInProgress)
 		EndFight();
 	
-	if (MaxClients >= 3 && GetLivePlayerCount() == 2)
+	if (GetRealPlayerCount() >= cvMinPlayers.IntValue && GetLivePlayerCount() == 2)
 	{
 		for (int i = 1; i <= MaxClients; i++)
 		{
@@ -260,6 +269,7 @@ public Action EventPlayerDeath(Event event, const char[] name, bool dontBroadcas
 				return Plugin_Continue;
 				
 		PrintCenterTextAll("%t", "1v1 situation");
+		LastManStanding = true;
 		InitKnifeFight();
 		return Plugin_Continue;
 	}
@@ -385,9 +395,20 @@ void SendKnifeMenu(int client)
 
 public int kfmenu_hndl(Menu kfmenu, MenuAction action, int client, int item)
 {
+	if (!LastManStanding)
+	{
+		delete kfmenu;
+		return;
+	}
+		
 	char message[MAX_CHAT_SIZE];
 	switch (action)
 	{
+		case MenuAction_End:
+		{
+			delete kfmenu;
+		}
+		
 		case MenuAction_Select:
 		{
 			
@@ -454,6 +475,7 @@ public int kfmenu_hndl(Menu kfmenu, MenuAction action, int client, int item)
 
 void StartFight()
 {
+	LastManStanding = false;
 	FightInProgress = true;
 	
 	if (CSGO)
@@ -533,18 +555,18 @@ void TeleportPlayers()
 		float pos[3], angles[3], velocity[3];
 		GetClientAbsOrigin(Player1, pos);
 		GetClientEyeAngles(Player1, angles);
-		velocity = GetClientVelocity(Player1);
+		GetEntPropVector(Player1, Prop_Send, "m_vecVelocity", velocity);
 		TeleportEntity(Player2, pos, angles, velocity);
 	}
 	else if (cvDevZones.BoolValue)
 	{
 		float position[3];
-		char mapname[64], zone[64];
+		char mapname[64], zone[12];
 		GetCurrentMap(mapname, sizeof(mapname));
-		Format(zone, sizeof(zone), "%s_knifefight", mapname);
+		Format(zone, sizeof(zone), "knifefight", mapname);
 		Zone_GetZonePosition(zone, false, position);
-		TeleportEntity(Player1, position, NULL_VECTOR, NULL_VECTOR);
-		TeleportEntity(Player2, position, NULL_VECTOR, NULL_VECTOR);
+		TeleportEntity(Player1, position, view_as<float>( { 0.0, 0.0, 0.0 } ), view_as<float>( { 0.0, 0.0, 0.0 } ));
+		TeleportEntity(Player2, position, view_as<float>( { 0.0, 0.0, 0.0 } ), view_as<float>( { 0.0, 0.0, 0.0 } ));
 	}
 }
 
@@ -590,13 +612,11 @@ public Action StartBeacon(Handle timer, int client)
 	
 	if (GetClientTeam(client) == 2)
 	{
-		TE_SetupBeamRingPoint(vec, 10.0, 800.0, g_beamsprite, g_halosprite, 
-			0, 10, 1.0, 10.0, 0.0, redColor, 0, 0);
+		TE_SetupBeamRingPoint(vec, 10.0, 800.0, g_beamsprite, g_halosprite, 0, 10, 1.0, 10.0, 0.0, redColor, 0, 0);
 	}
 	else if (GetClientTeam(client) == 3)
 	{
-		TE_SetupBeamRingPoint(vec, 10.0, 800.0, g_beamsprite, g_halosprite, 
-			0, 10, 1.0, 10.0, 0.0, blueColor, 0, 0);
+		TE_SetupBeamRingPoint(vec, 10.0, 800.0, g_beamsprite, g_halosprite, 0, 10, 1.0, 10.0, 0.0, blueColor, 0, 0);
 	}
 	TE_SendToAll();
 	
@@ -713,6 +733,7 @@ void ResetFight()
 	Player1Agree = 0;
 	Player2Agree = 0;
 	FightInProgress = false;
+	LastManStanding = false;
 }
 
 void UnblockEntity(int entity)
@@ -776,11 +797,13 @@ int GetLivePlayerCount()
 	return count;
 }
 
-float GetClientVelocity(int client)
+int GetRealPlayerCount()
 {
-	float vel[3];
-	vel[0] = GetEntPropFloat(client, Prop_Send, "m_vecVelocity[0]");
-	vel[1] = GetEntPropFloat(client, Prop_Send, "m_vecVelocity[1]");
-	vel[2] = GetEntPropFloat(client, Prop_Send, "m_vecVelocity[2]");
-	return vel;
-} 
+	int count;
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientConnected(i) && IsClientInGame(i) && !IsClientSourceTV(i))
+			count++;
+	}
+	return count;
+}
