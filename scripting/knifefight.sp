@@ -802,7 +802,7 @@ int GetRealPlayerCount()
 	int count;
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientConnected(i) && IsClientInGame(i) && !IsClientSourceTV(i))
+		if (IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) > 1)
 			count++;
 	}
 	return count;
